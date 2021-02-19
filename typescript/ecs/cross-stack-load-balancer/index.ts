@@ -3,6 +3,7 @@ import ec2 = require('@aws-cdk/aws-ec2');
 import { Stack, Construct, StackProps, App } from '@aws-cdk/core';
 import { SplitAtListener_LoadBalancerStack, SplitAtListener_ServiceStack } from './split-at-listener';
 import { SplitAtTargetGroup_LoadBalancerStack, SplitAtTargetGroup_ServiceStack } from './split-at-targetgroup';
+import { SharedListener_LoadBalancerStack, SharedListener_ServiceStack } from "./shared-listener-with-fixed-response";
 
 /**
  * Shared infrastructure -- VPC and Cluster
@@ -44,5 +45,26 @@ new SplitAtTargetGroup_ServiceStack(app, 'SplitAtTargetGroup-ServiceStack', {
   vpc: infra.vpc,
   targetGroup: splitAtTargetGroupLBStack.targetGroup
 });
+
+// Demo shared Loadbalancer with fixed response
+const sharedListenerLoadBalancerStack = new SharedListener_LoadBalancerStack(app, 'SharedListener-LoadBalancerStack', {
+  vpc: infra.vpc
+});
+
+new SharedListener_ServiceStack(app, 'SharedListener-ServiceStack1',{
+  vpc: infra.vpc,
+  cluster: infra.cluster,
+  listener: sharedListenerLoadBalancerStack.listener,
+  querystring: 'app1',
+  lbRulePriority: 1,
+})
+
+new SharedListener_ServiceStack(app, 'SharedListener-ServiceStack2',{
+  vpc: infra.vpc,
+  cluster: infra.cluster,
+  listener: sharedListenerLoadBalancerStack.listener,
+  querystring: 'app2',
+  lbRulePriority: 2,
+})
 
 app.synth();
